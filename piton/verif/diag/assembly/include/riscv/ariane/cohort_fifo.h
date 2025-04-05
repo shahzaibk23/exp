@@ -13,6 +13,8 @@
 #include <unistd.h>
 #endif
 
+#define LOOP_NUM 10  // Adjust based on intended back-off iterations
+
 #ifdef PRI
 #define PRINTBT printf("%s\n", __func__);
 //#define PRI_DEBUG
@@ -54,10 +56,20 @@ struct _fifo_ctrl_t {
     volatile void* data_array;
     
 };
+void fifo_push_64(uint64_t element, fifo_ctrl_t* fifo_ctrl);
+uint64_t fifo_pop_64(fifo_ctrl_t *fifo_ctrl);
+void fifo_push_sync(fifo_ctrl_t* fifo_ctrl, uint32_t pos);
+void fifo_pop_sync(fifo_ctrl_t* fifo_ctrl, uint32_t pos);
+ptr_t private_get_tail(fifo_ctrl_t *fifo_ctrl);
+ptr_t private_get_head(fifo_ctrl_t *fifo_ctrl);
 
 
-void fifo_push_64(uint64_t element, fifo_ctrl_t* fifo_ctrl, uint32_t idx);
-uint64_t fifo_pop_64 (fifo_ctrl_t* fifo_ctrl, uint32_t idx);
+// void fifo_push_64(uint64_t element, fifo_ctrl_t* fifo_ctrl, uint32_t idx);
+// uint64_t fifo_pop_64 (fifo_ctrl_t* fifo_ctrl, uint32_t idx);
+void fifo_push_sync(fifo_ctrl_t* fifo_ctrl, uint32_t pos);
+void fifo_pop_sync(fifo_ctrl_t* fifo_ctrl, uint32_t pos);
+void fifo_push_64(uint64_t element, fifo_ctrl_t* fifo_ctrl);
+uint64_t fifo_pop_64(fifo_ctrl_t *fifo_ctrl);
 
 uint16_t clog2(uint16_t el);
 
@@ -174,37 +186,73 @@ void fifo_deinit(fifo_ctrl_t *fifo_ctrl)
 // as 128 bits aren't supported, 64 would suffice
 //
 //
-void fifo_push_64(uint64_t element, fifo_ctrl_t* fifo_ctrl, uint32_t pos)
-{
+// void fifo_push_64(uint64_t element, fifo_ctrl_t* fifo_ctrl, uint32_t pos)
+// {
+//     PRINTBT
+//     // loop whilie the fifo is full
+// #ifdef PRI
+//     if (fifo_is_full(fifo_ctrl)) {
+//         sleep(1);
+//         printf("fifo is full\n");
+//         return;
+//     }
+// #else
+// 	//while (fifo_is_full(fifo_ctrl));
+// #endif
+//     *((volatile uint64_t *)((volatile uint64_t *) fifo_ctrl->data_array) + (pos)) = (volatile uint64_t) element;
+// }
+
+// volatile uint64_t fifo_pop_64(fifo_ctrl_t *fifo_ctrl, uint32_t pos)
+// {
+//     PRINTBT
+// #ifdef PRI
+//     if (fifo_is_empty(fifo_ctrl)) {
+//         sleep(1);
+//         printf("fifo is empty\n");
+//         return 0xdeadbeef;
+//     }
+// #else
+//     while ((*((volatile uint64_t *)fifo_ctrl->tail_ptr))<= pos){
+//         for (int i=0; i< LOOP_NUM;i++, back_off_count++);
+//     }
+// #endif
+//     uint64_t element = *((volatile uint64_t *)(((volatile uint64_t *) fifo_ctrl->data_array) + pos ));
+//     return element;
+// }
+
+void fifo_push_64(uint64_t element, fifo_ctrl_t* fifo_ctrl) {
     PRINTBT
-    // loop whilie the fifo is full
-#ifdef PRI
-    if (fifo_is_full(fifo_ctrl)) {
-        sleep(1);
-        printf("fifo is full\n");
-        return;
+    ptr_t tail = private_get_tail(fifo_ctrl);
+    if (tail < fifo_ctrl->fifo_length) {  // Basic full check
+        *((volatile uint64_t*)fifo_ctrl->data_array + tail) = element;
+        fifo_push_sync(fifo_ctrl, tail + 1);  // Update tail
     }
-#else
-	//while (fifo_is_full(fifo_ctrl));
-#endif
-    *((volatile uint64_t *)((volatile uint64_t *) fifo_ctrl->data_array) + (pos)) = (volatile uint64_t) element;
 }
 
-volatile uint64_t fifo_pop_64(fifo_ctrl_t *fifo_ctrl, uint32_t pos)
-{
+// uint64_t fifo_pop_64(fifo_ctrl_t *fifo_ctrl) {
+//     PRINTBT
+//     ptr_t head = private_get_head(fifo_ctrl);
+//     while (head >= fifo_ctrl->fifo_length || fifo_is_empty(fifo_ctrl)) {
+//         for (int i = 0; i < LOOP_NUM; i++, back_off_count++);
+//     }
+//     uint64_t element = *((volatile uint64_t*)fifo_ctrl->data_array + head);
+//     fifo_pop_sync(fifo_ctrl, head + 1);  // Update head
+//     return element;
+// }
+
+uint64_t fifo_pop_64(fifo_ctrl_t *fifo_ctrl) {
     PRINTBT
-#ifdef PRI
-    if (fifo_is_empty(fifo_ctrl)) {
-        sleep(1);
-        printf("fifo is empty\n");
-        return 0xdeadbeef;
+    ptr_t head = private_get_head(fifo_ctrl);
+    int attempts = 1000;  // Limit retries
+    while (head >= fifo_ctrl->fifo_length || fifo_is_empty(fifo_ctrl)) {
+        if (--attempts == 0) {
+            printf("fifo_pop_64: FIFO empty or invalid head (%u), returning 0\n", head);
+            return 0;  // Fail gracefully
+        }
+        for (int i = 0; i < LOOP_NUM; i++, back_off_count++);
     }
-#else
-    while ((*((volatile uint64_t *)fifo_ctrl->tail_ptr))<= pos){
-        for (int i=0; i< LOOP_NUM;i++, back_off_count++);
-    }
-#endif
-    uint64_t element = *((volatile uint64_t *)(((volatile uint64_t *) fifo_ctrl->data_array) + pos ));
+    uint64_t element = *((volatile uint64_t*)fifo_ctrl->data_array + head);
+    fifo_pop_sync(fifo_ctrl, head + 1);
     return element;
 }
 

@@ -1,5 +1,17 @@
 #include "cohort_fifo.h"
 
+#ifndef COHORT_H
+#define COHORT_H
+
+typedef uint8_t c_id_t;  // Move this up
+void cohort_set_tlb(uint32_t arg1, uint32_t arg2);
+void cohort_on(c_id_t c_id);
+void cohort_off(c_id_t c_id);
+void pass(void);
+void fail(void);
+void baremetal_write(uint32_t tile, uint64_t addr, uint64_t value);
+
+#endif
 struct _cohort_t;
 typedef struct _cohort_t cohort_t;
 
@@ -103,25 +115,43 @@ void cohort_deinit(cohort_t* cohort)
 //	fifo_pop_sync(cohort->sw_consumer_fifo);
 //}
 
-void cohort_off(c_id_t c_id)
-{
-	cohort_stop_monitors(c_id);
+// void cohort_off(c_id_t c_id)
+// {
+// 	cohort_stop_monitors(c_id);
+// #ifdef COHORT_DEBUG
+// 	cohort_print_monitors(c_id);
+// 	cohort_print_debug_monitors(c_id);
+// #endif
+//     cohort_ni_write(c_id, 7, 0);
+//     __sync_synchronize;
+// #ifndef BARE_METAL
+//     // don't flush in bare metal, because some things can go wrong
+//     dec_flush_tlb(0);
+// #endif
+// }
+
+// void cohort_on(c_id_t c_id)
+// {
+//     // turn on the monitor
+//     // don't lower reset, but turn on and clear the monitor
+//     cohort_ni_write(c_id, 7, 6);
+//     __sync_synchronize;
+// }
+
+void cohort_off(c_id_t c_id) {
+    cohort_stop_monitors(c_id);
 #ifdef COHORT_DEBUG
-	cohort_print_monitors(c_id);
-	cohort_print_debug_monitors(c_id);
+    cohort_print_monitors(c_id);
+    cohort_print_debug_monitors(c_id);
 #endif
     cohort_ni_write(c_id, 7, 0);
     __sync_synchronize;
 #ifndef BARE_METAL
-    // don't flush in bare metal, because some things can go wrong
     dec_flush_tlb(0);
 #endif
 }
 
-void cohort_on(c_id_t c_id)
-{
-    // turn on the monitor
-    // don't lower reset, but turn on and clear the monitor
+void cohort_on(c_id_t c_id) {
     cohort_ni_write(c_id, 7, 6);
     __sync_synchronize;
 }
@@ -149,3 +179,10 @@ void cohort_print_debug_monitors(c_id_t c_id)
 
 }
 
+void cohort_set_tlb(uint32_t arg1, uint32_t arg2) {
+    // Stub implementation: to be replaced with actual TLB setup
+    // For now, assume it writes to a hardware register
+    // Example: cohort_ni_write(0, reg, value);
+    (void)arg1;  // Suppress unused parameter warning
+    (void)arg2;
+}
