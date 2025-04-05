@@ -236,18 +236,28 @@ pattern = ["spc0", "pc_w0"]
 tt = ReplicatePattern(text, pattern)
 print(tt)
 %>
+        // cpx_driven = drive_iob();
+        // if (cpx_driven) begin
+        //    fake_iob_out_data[159:128] = get_cpx_word(0);
+        //    fake_iob_out_data[127:96] = get_cpx_word(1);
+        //    fake_iob_out_data[95:64] = get_cpx_word(2);
+        //    fake_iob_out_data[63:32] = get_cpx_word(3);
+        //    fake_iob_out_data[31:0] = get_cpx_word(4);
+        //    $display("Doing IOB stuff - got values: %x %x %x %x %x", fake_iob_out_data[159:128], fake_iob_out_data[127:96], fake_iob_out_data[95:64], fake_iob_out_data[63:32], fake_iob_out_data[31:0]);
+        // end else begin
+        //    fake_iob_out_data = {160{1'b0}};
+        // end
+
         cpx_driven = drive_iob();
         if (cpx_driven) begin
-            fake_iob_out_data[159:128] = get_cpx_word(0);
-            fake_iob_out_data[127:96] = get_cpx_word(1);
-            fake_iob_out_data[95:64] = get_cpx_word(2);
-            fake_iob_out_data[63:32] = get_cpx_word(3);
-            fake_iob_out_data[31:0] = get_cpx_word(4);
+            fake_iob_out_data = {get_cpx_word(0), get_cpx_word(1), get_cpx_word(2), get_cpx_word(3), get_cpx_word(4)};
             $display("Doing IOB stuff - got values: %x %x %x %x %x", fake_iob_out_data[159:128], fake_iob_out_data[127:96], fake_iob_out_data[95:64], fake_iob_out_data[63:32], fake_iob_out_data[31:0]);
         end else begin
             fake_iob_out_data = {160{1'b0}};
         end
+
         `endif
+
 
         // a little error check
         if (iob_buffer_val && (out_buffer_val[out_write_index] | out_buffer_val[out_write_index + 1] == 1'b1))

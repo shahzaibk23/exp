@@ -54,11 +54,15 @@ interface config_if (
 `ifndef SYNTHESIS
     task set_config(input paddr_t addr_in, data_t data_in);
         $display("Adding configuration");
+        `ifndef VERILATOR
         @(negedge clk);
+        `endif
         valid = 1'b1;
         data = data_in;
         addr = addr_in;
+        `ifndef VERILATOR
         @(posedge clk);
+        `endif
     endtask: set_config
 
     task transact(input paddr_t addr_in, size_t size_in, req_type_t op_in);

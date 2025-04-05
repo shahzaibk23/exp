@@ -60,7 +60,9 @@ interface coherency_configure_if
 	modport slave (input valid, base_addr, size,
 					output ack);
 
+	`ifndef VERILATOR
 	`fpv_ready_valid_if(valid, ack, {base_addr, size})
+	`endif
 
 
 endinterface : coherency_configure_if

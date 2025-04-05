@@ -59,7 +59,7 @@ input reg [4:0]                       pll_rangea,
 output wire                            pll_lock,
 input reg [1:0]                       clk_mux_sel,
 input reg                             async_mux,
-input                                 diag_done,
+output                                 diag_done,
 input                                 ok_iob
 `endif
 );

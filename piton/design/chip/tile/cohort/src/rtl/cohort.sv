@@ -131,7 +131,7 @@ module cohort (
     assign tri_l2.req_ack        = tri_req_ack;
 
     assign tri_l2.resp_val       = tri_resp_val;
-    assign tri_l2.resp_type      = tri_resp_returntype;
+    assign tri_l2.resp_type = tri_pkg::l15_rtrntypes_t'(tri_resp_returntype); //assign tri_l2.resp_type      = tri_resp_returntype;
     assign tri_l2.resp_atomic    = tri_resp_atomic;
     wire [127:0] resp_data_full  = {tri_resp_data_1, tri_resp_data_0};
     assign tri_l2.resp_inv_addr  = tri_resp_inval_address_15_4;

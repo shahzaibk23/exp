@@ -37,8 +37,8 @@ module cohort_serdes #(
 	decoupled_vr_if.slave       input_data        ,
 	decoupled_vr_if.master      output_data
 );
-	localparam inputwidth = $bits(input_data.data);
-	localparam outputwidth = $bits(output_data.data);
+	localparam inputwidth = 64; //$bits(input_data.data);
+	localparam outputwidth = 64;//$bits(output_data.data);
 
 	logic [15:0] s_counter_r;
 	logic [15:0] s_counter_n;

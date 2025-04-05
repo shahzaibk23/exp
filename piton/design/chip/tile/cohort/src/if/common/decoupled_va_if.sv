@@ -50,7 +50,9 @@ interface decoupled_va_if
 	);
 
 	`ifndef SYNTHESIS
+	`ifndef VERILATOR
 		`fpv_valid_ack_if(valid, ack, data)	
+	`endif
 	`endif
 
 
